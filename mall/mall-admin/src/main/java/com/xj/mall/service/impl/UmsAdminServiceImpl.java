@@ -30,6 +30,7 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class UmsAdminServiceImpl implements UmsAdminService {
@@ -48,6 +49,8 @@ public class UmsAdminServiceImpl implements UmsAdminService {
     private UmsAdminLoginLogMapper loginLogMapper;
     @Autowired
     private UmsAdminRoleRelationDao adminRoleRelationDao;
+    @Autowired
+    private UmsAdminPermissionRelationDao adminPermissionRelationDao;
 
     @Override
     public UmsAdmin getAdminByUsername(String username) {
@@ -168,6 +171,21 @@ public class UmsAdminServiceImpl implements UmsAdminService {
 
     @Override
     public int updatePermission(Long adminId, List<Long> permissionIds) {
+        //删除原有权限关系
+        UmsAdminPermissionRelationExample relationExample = new UmsAdminPermissionRelationExample();
+        relationExample.createCriteria().andAdminIdEqualTo(adminId);
+        adminPermissionRelationMapper.deleteByExample(relationExample);
+        //获取用户所有角色、权限
+        List<UmsPermission> permissionList = adminRoleRelationDao.getPermissionList(adminId);
+        List<Long> rolePermissionList = permissionList.stream().map(UmsPermission::getId).collect(Collectors.toList());
+        if (!CollectionUtil.isEmpty(permissionIds)) {
+            List<UmsAdminPermissionRelation> adminPermissionRelations = new ArrayList<>();
+            //筛选出要添加的权限
+            List<Long> addPermission = permissionIds.stream().filter(permissionId -> !rolePermissionList.contains(permissionId)).collect(Collectors.toList());
+            //筛选出要添加的权限
+            List<Long> removePermission = rolePermissionList.stream().filter(permissionId -> !permissionIds.contains(permissionId)).collect(Collectors.toList());
+
+        }
         return 0;
     }
 
