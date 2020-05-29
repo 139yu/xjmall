@@ -1,6 +1,8 @@
 package com.xj.mall.service.impl;
 
 import cn.hutool.core.collection.CollectionUtil;
+import com.github.pagehelper.PageHelper;
+import com.xj.mall.dao.*;
 import com.xj.mall.dto.AdminUserDetails;
 import com.xj.mall.dto.UmsAdminParam;
 import com.xj.mall.dto.UpdateAdminPasswordParam;
@@ -21,11 +23,11 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -44,6 +46,8 @@ public class UmsAdminServiceImpl implements UmsAdminService {
     private UmsAdminPermissionRelationMapper adminPermissionRelationMapper;
     @Autowired
     private UmsAdminLoginLogMapper loginLogMapper;
+    @Autowired
+    private UmsAdminRoleRelationDao adminRoleRelationDao;
 
     @Override
     public UmsAdmin getAdminByUsername(String username) {
@@ -103,27 +107,58 @@ public class UmsAdminServiceImpl implements UmsAdminService {
 
     @Override
     public List<UmsAdmin> list(String keyword, Integer pageSize, Integer pageNum) {
-        return null;
+        PageHelper.startPage(pageNum, pageSize);
+        UmsAdminExample example = new UmsAdminExample();
+        if (!StringUtils.isEmpty(keyword)) {
+            UmsAdminExample.Criteria criteria = example.createCriteria();
+            criteria.andUsernameLike("%" + keyword + "%");
+        }
+        return adminMapper.selectByExample(example);
     }
 
     @Override
     public int update(Long id, UmsAdmin admin) {
-        return 0;
+        admin.setId(id);
+        UmsAdmin temp = adminMapper.selectByPrimaryKey(id);
+        if (temp != null) {
+            if (temp.getPassword().equals(passwordEncoder.encode(admin.getPassword()))) {
+                admin.setPassword(null);
+            } else {
+                admin.setPassword(passwordEncoder.encode(admin.getPassword()));
+            }
+        }
+        int count = adminMapper.updateByPrimaryKeySelective(admin);
+        return count;
     }
 
     @Override
     public int delete(Long id) {
-        return 0;
+        return adminMapper.deleteByPrimaryKey(id);
     }
 
     @Override
     public int updateRole(Long adminId, List<Long> roleIds) {
-        return 0;
+        int count = roleIds == null ? 0 : roleIds.size();
+        UmsAdminRoleRelationExample adminRoleRelationExample = new UmsAdminRoleRelationExample();
+        adminRoleRelationExample.createCriteria().andAdminIdEqualTo(adminId);
+        adminRoleRelationMapper.deleteByExample(adminRoleRelationExample);
+        if (CollectionUtil.isNotEmpty(roleIds)) {
+            List<UmsAdminRoleRelation> list = new ArrayList<>();
+            for (Long roleId : roleIds) {
+                UmsAdminRoleRelation adminRoleRelation = new UmsAdminRoleRelation();
+                adminRoleRelation.setAdminId(adminId);
+                adminRoleRelation.setRoleId(roleId);
+                list.add(adminRoleRelation);
+            }
+            count = adminRoleRelationDao.insertList(adminId,roleIds);
+        }
+
+        return count;
     }
 
     @Override
     public List<UmsRole> getRoleList(Long adminId) {
-        return null;
+        return adminRoleRelationDao.getRoleList(adminId);
     }
 
     @Override
@@ -138,7 +173,7 @@ public class UmsAdminServiceImpl implements UmsAdminService {
 
     @Override
     public List<UmsPermission> getPermissionList(Long adminId) {
-        return null;
+        return adminRoleRelationDao.getPermissionList(adminId);
     }
 
     @Override
