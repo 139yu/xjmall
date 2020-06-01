@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xj.mall.dao.UmsRolePermissionRelationDao">
+
+    <select id="getPermissionList" resultMap="com.xj.mall.mapper.UmsRolePermissionRelationMapper.BaseResultMap">
+        select p.* from
+            ums_role_permission_relation rp
+        left join
+            ums_permission on rp.permission_id = p.id
+        where rp.role_id = #{roleId}
+    </select>
+    <insert id="insertList">
+        insert into
+            ums_role_permission_relation (role_id,permission_id)
+        values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (
+            #{item.roleId,jdbcType=BIGINT},
+            #{item.permissionId,jdbcType=BIGINT}
+            )
+        </foreach>
+    </insert>
+</mapper>

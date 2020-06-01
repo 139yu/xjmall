@@ -14,12 +14,11 @@ import java.util.stream.Collectors;
 public class AdminUserDetails implements UserDetails {
     private UmsAdmin umsAdmin;
     private List<UmsPermission> permissionList;
-    private List<UmsResource> resourceList;
 
 
-    public AdminUserDetails(UmsAdmin umsAdmin,List<UmsResource> resourceList) {
+    public AdminUserDetails(UmsAdmin umsAdmin,List<UmsPermission> permissionList) {
         this.umsAdmin = umsAdmin;
-        this.resourceList = resourceList;
+        this.permissionList = permissionList;
     }
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
